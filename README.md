@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# The North Classic
 
-## Getting Started
+Plataforma web de showcase de baloncesto juvenil en México — torneos, perfiles de jugadores, scouting y CMS administrativo.
 
-First, run the development server:
+## Stack técnico
+
+| Capa | Tecnología | Justificación |
+|------|------------|---------------|
+| Frontend | **Next.js 16** (App Router) | SEO, ISR, Image Optimization, rutas en español |
+| Estilos | **Tailwind CSS v4** | Design system dark, mobile-first |
+| Base de datos | **PostgreSQL** (prod) / **SQLite** (dev) | Prisma ORM, bajo mantenimiento |
+| Auth | **Auth.js (NextAuth v5)** | Roles Admin / Visitante, credenciales |
+| CMS | **Panel admin propio** | CSV import desde Google Sheets / Forms |
+| Hosting | **Vercel** | CDN global, edge en México, deploy automático |
+| Storage | **Vercel Blob** o **Cloudflare R2** | Fotos y media (configurar en producción) |
+| Analytics | **Google Analytics 4** | `NEXT_PUBLIC_GA_MEASUREMENT_ID` |
+
+## Inicio rápido
 
 ```bash
+npm install
+npm run db:setup
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Sitio: http://localhost:3000
+- Admin: http://localhost:3000/admin/login
+- Credenciales seed: `admin@thenorthclassic.mx` / `admin123`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Estructura del proyecto
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/app/(site)/     # Páginas públicas (es-MX)
+src/app/admin/      # CMS y importación CSV
+prisma/             # Schema y seed
+docs/               # Arquitectura, design system, accesibilidad
+```
 
-## Learn More
+## Importación de jugadores (Google Forms)
 
-To learn more about Next.js, take a look at the following resources:
+1. En Google Sheets: **Archivo → Descargar → CSV**
+2. Admin → **Importar** → subir CSV
+3. Columnas soportadas en español: `nombre`, `apellido`, `equipo`, `numero`, `posicion`, `altura`, `peso`, etc.
+4. Duplicados se detectan por slug de nombre y se actualizan
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Producción
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Crear base **PostgreSQL** (Neon, Supabase o Railway)
+2. Actualizar `DATABASE_URL` en Vercel
+3. Configurar `AUTH_SECRET`, `NEXTAUTH_URL`, `NEXT_PUBLIC_SITE_URL`
+4. `npx prisma migrate deploy`
+5. Subir media a Blob/R2 y actualizar URLs en admin
 
-## Deploy on Vercel
+## Documentación
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — API, schema, hosting
+- [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) — Colores, tipografía, componentes
+- [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md) — Auditoría WCAG 2.2 AA
+- [docs/SITEMAP.md](docs/SITEMAP.md) — Mapa del sitio
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Licencia
+
+Proyecto privado — The North Classic © 2026
