@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { importTournamentWorkbook } from "@/app/admin/import-workbook";
 import { Download, Upload, CheckCircle2, AlertCircle } from "lucide-react";
+import { AdminFormFeedback } from "./AdminFormFeedback";
 
 export function WorkbookImporter() {
   const router = useRouter();
@@ -11,17 +12,19 @@ export function WorkbookImporter() {
   const [result, setResult] = useState<Awaited<
     ReturnType<typeof importTournamentWorkbook>
   > | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFile = async (file: File) => {
     setLoading(true);
     setResult(null);
+    setError(null);
     try {
       const buffer = await file.arrayBuffer();
       const res = await importTournamentWorkbook(buffer);
       setResult(res);
       router.refresh();
     } catch (e) {
-      alert((e as Error).message);
+      setError((e as Error).message);
     }
     setLoading(false);
   };
@@ -66,6 +69,8 @@ export function WorkbookImporter() {
           }}
         />
       </label>
+
+      <AdminFormFeedback error={error} className="mt-4" />
 
       {result && (
         <div className="mt-8 space-y-4 text-sm">

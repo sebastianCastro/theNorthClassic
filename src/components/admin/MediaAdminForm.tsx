@@ -1,13 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { createMedia } from "@/app/admin/actions";
+import { AdminFormFeedback } from "./AdminFormFeedback";
 
 export function MediaAdminForm() {
+  const router = useRouter();
   const [type, setType] = useState("instagram");
+  const [pending, startTransition] = useTransition();
+  const [success, setSuccess] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   return (
-    <form action={createMedia} className="mb-12 space-y-4 rounded-lg border border-border p-6">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        setSuccess(null);
+        setError(null);
+        const form = e.currentTarget;
+        const fd = new FormData(form);
+        startTransition(async () => {
+          try {
+            await createMedia(fd);
+            setSuccess("Contenido publicado.");
+            form.reset();
+            setType("instagram");
+            router.refresh();
+          } catch (err) {
+            setError(
+              err instanceof Error ? err.message : "No se pudo publicar.",
+            );
+          }
+        });
+      }}
+      className="mb-12 space-y-4 rounded-lg border border-border p-6"
+    >
       <h2 className="font-semibold text-white">Publicar contenido</h2>
       <label className="block text-xs text-muted">
         Tipo
@@ -24,7 +52,11 @@ export function MediaAdminForm() {
       </label>
       <label className="block text-xs text-muted">
         Título
-        <input name="title" required className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white" />
+        <input
+          name="title"
+          required
+          className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
+        />
       </label>
       {type === "instagram" && (
         <label className="block text-xs text-muted">
@@ -41,11 +73,18 @@ export function MediaAdminForm() {
         <>
           <label className="block text-xs text-muted">
             URL del video
-            <input name="url" required className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white" />
+            <input
+              name="url"
+              required
+              className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
+            />
           </label>
           <label className="block text-xs text-muted">
             Miniatura (URL)
-            <input name="thumbnailUrl" className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white" />
+            <input
+              name="thumbnailUrl"
+              className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
+            />
           </label>
         </>
       )}
@@ -53,18 +92,30 @@ export function MediaAdminForm() {
         <>
           <label className="block text-xs text-muted">
             Imagen de portada (URL)
-            <input name="thumbnailUrl" required className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white" />
+            <input
+              name="thumbnailUrl"
+              required
+              className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
+            />
           </label>
           <label className="block text-xs text-muted">
             Descripción
-            <textarea name="description" rows={3} required className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white" />
+            <textarea
+              name="description"
+              rows={3}
+              required
+              className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
+            />
           </label>
           <input type="hidden" name="url" value="#" />
         </>
       )}
-      <button type="submit" className="btn-primary">
-        Publicar
-      </button>
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="submit" disabled={pending} className="btn-primary">
+          {pending ? "Publicando…" : "Publicar"}
+        </button>
+        <AdminFormFeedback success={success} error={error} />
+      </div>
     </form>
   );
 }

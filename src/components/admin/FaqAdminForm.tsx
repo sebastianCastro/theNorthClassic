@@ -1,8 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { saveFaqs } from "@/app/admin/actions";
 import { Plus, Trash2 } from "lucide-react";
+import { AdminFormFeedback } from "./AdminFormFeedback";
 
 type FaqItem = { q: string; a: string };
 
@@ -10,8 +12,10 @@ export function FaqAdminForm({ initialFaqs }: { initialFaqs: FaqItem[] }) {
   const [faqs, setFaqs] = useState<FaqItem[]>(
     initialFaqs.length > 0 ? initialFaqs : []
   );
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [message, setMessage] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const updateItem = (index: number, field: "q" | "a", value: string) => {
     setFaqs((list) =>
@@ -28,9 +32,18 @@ export function FaqAdminForm({ initialFaqs }: { initialFaqs: FaqItem[] }) {
   };
 
   const handleSave = () => {
+    setSuccess(null);
+    setError(null);
     startTransition(async () => {
-      await saveFaqs(faqs);
-      setMessage("Preguntas frecuentes guardadas.");
+      try {
+        await saveFaqs(faqs);
+        setSuccess("Preguntas frecuentes guardadas.");
+        router.refresh();
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "No se pudieron guardar las FAQ.",
+        );
+      }
     });
   };
 
@@ -108,7 +121,7 @@ export function FaqAdminForm({ initialFaqs }: { initialFaqs: FaqItem[] }) {
         </button>
       </div>
 
-      {message && <p className="text-sm text-green-400">{message}</p>}
+      <AdminFormFeedback success={success} error={error} />
     </div>
   );
 }

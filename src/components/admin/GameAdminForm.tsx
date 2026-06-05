@@ -7,6 +7,7 @@ import { AdminDeleteButton } from "./AdminDeleteButton";
 import { formatDateTimeMX } from "@/lib/utils";
 import { ROUND_PRESETS, ROUND_CUSTOM } from "@/lib/game-rounds";
 import { isGamePlayed } from "@/lib/game-scores";
+import { AdminFormFeedback } from "./AdminFormFeedback";
 
 type Team = { id: string; name: string; genderDivision: string; categoryDivision: string };
 
@@ -26,8 +27,10 @@ export function GameAdminForm({ teams, games }: { teams: Team[]; games: Game[] }
   const [createPending, startCreateTransition] = useTransition();
   const [savingId, setSavingId] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
+  const [errorId, setErrorId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createMessage, setCreateMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [roundPreset, setRoundPreset] = useState<string>(ROUND_PRESETS[0]);
   const router = useRouter();
 
@@ -36,7 +39,7 @@ export function GameAdminForm({ teams, games }: { teams: Team[]; games: Game[] }
       <form
         action={(fd) =>
           startCreateTransition(async () => {
-            setError(null);
+            setCreateError(null);
             setCreateMessage(null);
             try {
               fd.set("roundPreset", roundPreset);
@@ -44,7 +47,7 @@ export function GameAdminForm({ teams, games }: { teams: Team[]; games: Game[] }
               setCreateMessage("Partido creado.");
               router.refresh();
             } catch (err) {
-              setError(
+              setCreateError(
                 err instanceof Error
                   ? err.message
                   : "No se pudo crear el partido.",
@@ -114,16 +117,7 @@ export function GameAdminForm({ teams, games }: { teams: Team[]; games: Game[] }
         <button type="submit" disabled={createPending} className="btn-primary">
           {createPending ? "Creando…" : "Crear partido"}
         </button>
-        {createMessage && (
-          <p className="text-sm text-green-400" role="status">
-            {createMessage}
-          </p>
-        )}
-        {error && (
-          <p className="text-sm text-red-400" role="alert">
-            {error}
-          </p>
-        )}
+        <AdminFormFeedback success={createMessage} error={createError} />
       </form>
 
       <div>
@@ -166,7 +160,8 @@ export function GameAdminForm({ teams, games }: { teams: Team[]; games: Game[] }
                   key={formKey}
                   onSubmit={(e) => {
                     e.preventDefault();
-                    setError(null);
+                    setErrorId(null);
+                    setErrorMessage(null);
                     setSavedId(null);
                     const fd = new FormData(e.currentTarget);
                     setSavingId(g.id);
@@ -176,7 +171,8 @@ export function GameAdminForm({ teams, games }: { teams: Team[]; games: Game[] }
                         setSavedId(g.id);
                         router.refresh();
                       } catch (err) {
-                        setError(
+                        setErrorId(g.id);
+                        setErrorMessage(
                           err instanceof Error
                             ? err.message
                             : "No se pudo guardar el marcador.",
@@ -217,11 +213,10 @@ export function GameAdminForm({ teams, games }: { teams: Team[]; games: Game[] }
                   >
                     {savingId === g.id ? "Guardando…" : "Guardar"}
                   </button>
-                  {savedId === g.id && (
-                    <p className="text-sm text-green-400" role="status">
-                      Guardado.
-                    </p>
-                  )}
+                  <AdminFormFeedback
+                    success={savedId === g.id ? "Guardado." : null}
+                    error={errorId === g.id ? errorMessage : null}
+                  />
                 </form>
                 <div className="mt-3">
                   <AdminDeleteButton label="este partido" onDelete={deleteGame.bind(null, g.id)} />
@@ -230,11 +225,6 @@ export function GameAdminForm({ teams, games }: { teams: Team[]; games: Game[] }
             );
           })}
         </ul>
-        {error && !savedId && (
-          <p className="mt-4 text-sm text-red-400" role="alert">
-            {error}
-          </p>
-        )}
       </div>
     </div>
   );

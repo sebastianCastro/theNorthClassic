@@ -2,7 +2,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getSiteConfig } from "@/lib/site-config";
-import { saveScholarshipsCount } from "./actions";
+import { ScholarshipsAdminForm } from "@/components/admin/ScholarshipsAdminForm";
 import { redirect } from "next/navigation";
 
 export default async function AdminDashboardPage() {
@@ -46,35 +46,7 @@ export default async function AdminDashboardPage() {
         ))}
       </div>
 
-      <form
-        action={async (fd) => {
-          "use server";
-          const n = parseInt(String(fd.get("scholarships")), 10);
-          await saveScholarshipsCount(Number.isFinite(n) ? n : 0);
-        }}
-        className="mt-8 max-w-md rounded-lg border border-border bg-surface p-6"
-      >
-        <h2 className="font-semibold text-white">Becas en inicio</h2>
-        <p className="mt-1 text-sm text-muted">
-          Estadística &ldquo;La liga en cifras&rdquo;. Deja en 0 para mostrar
-          signo de interrogación.
-        </p>
-        <div className="mt-4 flex items-end gap-3">
-          <label className="block flex-1 text-xs text-muted">
-            Becas obtenidas
-            <input
-              name="scholarships"
-              type="number"
-              min={0}
-              defaultValue={config.scholarshipsCount}
-              className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
-            />
-          </label>
-          <button type="submit" className="btn-secondary text-sm shrink-0">
-            Guardar
-          </button>
-        </div>
-      </form>
+      <ScholarshipsAdminForm initialCount={config.scholarshipsCount} />
 
       <div className="mt-12 rounded-lg border border-border p-6">
         <h2 className="font-semibold text-white">Flujo recomendado</h2>

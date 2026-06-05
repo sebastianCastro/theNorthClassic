@@ -1,7 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { saveStatLeaders } from "@/app/admin/actions";
+import { AdminFormFeedback } from "./AdminFormFeedback";
 import { SearchablePlayerSelect } from "@/components/admin/SearchablePlayerSelect";
 import { playerMatchesDivision } from "@/lib/division-match";
 import {
@@ -57,6 +59,7 @@ export function StatLeadersAdminForm({
   initialSlots,
   players,
 }: Props) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [selections, setSelections] = useState<Record<string, string>>(() => {
     const map: Record<string, string> = {};
@@ -68,25 +71,35 @@ export function StatLeadersAdminForm({
     }
     return map;
   });
-  const [message, setMessage] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const totalPlayers = players.length;
 
   const handleSave = () => {
+    setSuccess(null);
+    setError(null);
     startTransition(async () => {
-      const leaders = Object.entries(selections)
-        .filter(([, slug]) => slug)
-        .map(([key, playerSlug]) => {
-          const [categoryDivision, genderDivision, statKey] = key.split("|");
-          return {
-            categoryDivision,
-            genderDivision,
-            statKey,
-            playerSlug,
-          };
-        });
-      await saveStatLeaders(leaders);
-      setMessage("Líderes guardados.");
+      try {
+        const leaders = Object.entries(selections)
+          .filter(([, slug]) => slug)
+          .map(([key, playerSlug]) => {
+            const [categoryDivision, genderDivision, statKey] = key.split("|");
+            return {
+              categoryDivision,
+              genderDivision,
+              statKey,
+              playerSlug,
+            };
+          });
+        await saveStatLeaders(leaders);
+        setSuccess("Líderes guardados.");
+        router.refresh();
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "No se pudieron guardar los líderes.",
+        );
+      }
     });
   };
 
@@ -169,7 +182,7 @@ export function StatLeadersAdminForm({
       >
         {pending ? "Guardando…" : "Guardar líderes"}
       </button>
-      {message && <p className="text-sm text-green-400">{message}</p>}
+      <AdminFormFeedback success={success} error={error} className="mt-3" />
     </div>
   );
 }

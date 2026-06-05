@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useTransition, useState } from "react";
+import { useState } from "react";
 import {
   upsertSponsor,
   deleteSponsor,
@@ -10,6 +10,7 @@ import {
 } from "@/app/admin/actions";
 import { SponsorLogo } from "@/components/sponsors/SponsorLogo";
 import { AdminDeleteButton } from "./AdminDeleteButton";
+import { AdminFormFeedback } from "./AdminFormFeedback";
 import { Plus } from "lucide-react";
 import { UPLOAD_MAX_MB } from "@/lib/upload-limits";
 import { getUploadValidationError } from "./submitWithUploadCheck";
@@ -22,6 +23,12 @@ type Sponsor = {
   sortOrder: number;
 };
 
+type Feedback = {
+  key: string;
+  success?: string;
+  error?: string;
+};
+
 export function SponsorAdminForm({
   sponsors,
   displaySlots,
@@ -30,10 +37,31 @@ export function SponsorAdminForm({
   displaySlots: number;
 }) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
   const [slots, setSlots] = useState(displaySlots);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
+
+  async function runAction(
+    key: string,
+    action: () => Promise<void>,
+    successMessage: string,
+  ) {
+    setBusyKey(key);
+    setFeedback(null);
+    try {
+      await action();
+      setFeedback({ key, success: successMessage });
+      router.refresh();
+    } catch (err) {
+      setFeedback({
+        key,
+        error:
+          err instanceof Error ? err.message : "No se pudo guardar el patrocinador.",
+      });
+    } finally {
+      setBusyKey(null);
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -56,18 +84,24 @@ export function SponsorAdminForm({
           </label>
           <button
             type="button"
-            disabled={pending}
+            disabled={busyKey === "slots"}
             onClick={() =>
-              startTransition(async () => {
-                await saveSponsorDisplaySlots(slots);
-                setMessage("Espacios actualizados.");
-                router.refresh();
-              })
+              runAction(
+                "slots",
+                async () => {
+                  await saveSponsorDisplaySlots(slots);
+                },
+                "Espacios actualizados.",
+              )
             }
             className="btn-secondary text-sm"
           >
-            Guardar espacios
+            {busyKey === "slots" ? "Guardando…" : "Guardar espacios"}
           </button>
+          <AdminFormFeedback
+            success={feedback?.key === "slots" ? feedback.success : null}
+            error={feedback?.key === "slots" ? feedback.error : null}
+          />
         </div>
         <p className="mt-3 text-xs text-muted">
           Registrados: {sponsors.length} · Mostrando en inicio:{" "}
@@ -79,127 +113,128 @@ export function SponsorAdminForm({
         <h2 className="font-semibold text-white">
           Patrocinadores ({sponsors.length})
         </h2>
-        {sponsors.map((s, index) => (
-          <form
-            key={s.id}
-            encType="multipart/form-data"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setError(null);
-              setMessage(null);
-              const fd = new FormData(e.currentTarget);
-              fd.set("id", s.id);
-              const uploadError = getUploadValidationError(fd, "logoFile");
-              if (uploadError) {
-                setError(uploadError);
-                return;
-              }
-              startTransition(async () => {
-                try {
-                  await upsertSponsor(fd);
-                  setMessage("Patrocinador guardado.");
-                  router.refresh();
-                } catch (err) {
-                  setError(
-                    err instanceof Error
-                      ? err.message
-                      : "No se pudo guardar el patrocinador."
-                  );
+        {sponsors.map((s, index) => {
+          const itemKey = `sponsor-${s.id}`;
+          return (
+            <form
+              key={s.id}
+              encType="multipart/form-data"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const fd = new FormData(e.currentTarget);
+                fd.set("id", s.id);
+                const uploadError = getUploadValidationError(fd, "logoFile");
+                if (uploadError) {
+                  setFeedback({ key: itemKey, error: uploadError });
+                  return;
                 }
-              });
-            }}
-            className="rounded-lg border border-border bg-surface p-4"
-          >
-            <p className="mb-3 text-xs font-medium uppercase tracking-widest text-accent">
-              Patrocinador {index + 1}
-            </p>
-            <input type="hidden" name="id" value={s.id} />
-            <div className="mb-4 flex items-center gap-4">
-              <SponsorLogo name={s.name} logoUrl={s.logoUrl} height={48} />
-              <p className="text-xs text-muted">
-                Sin logo se muestran iniciales en el sitio público.
+                void runAction(
+                  itemKey,
+                  async () => {
+                    await upsertSponsor(fd);
+                  },
+                  "Patrocinador guardado.",
+                );
+              }}
+              className="rounded-lg border border-border bg-surface p-4"
+            >
+              <p className="mb-3 text-xs font-medium uppercase tracking-widest text-accent">
+                Patrocinador {index + 1}
               </p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="block text-xs text-muted">
-                Nombre
-                <input
-                  name="name"
-                  defaultValue={s.name}
-                  required
-                  className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
+              <input type="hidden" name="id" value={s.id} />
+              <div className="mb-4 flex items-center gap-4">
+                <SponsorLogo name={s.name} logoUrl={s.logoUrl} height={48} />
+                <p className="text-xs text-muted">
+                  Sin logo se muestran iniciales en el sitio público.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block text-xs text-muted">
+                  Nombre
+                  <input
+                    name="name"
+                    defaultValue={s.name}
+                    required
+                    className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
+                  />
+                </label>
+                <label className="block text-xs text-muted">
+                  Enlace al sitio
+                  <input
+                    name="websiteUrl"
+                    defaultValue={s.websiteUrl ?? ""}
+                    type="url"
+                    className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
+                  />
+                </label>
+                <label className="block text-xs text-muted sm:col-span-2">
+                  Logo (archivo local, opcional, máx. {UPLOAD_MAX_MB} MB)
+                  <input
+                    type="file"
+                    name="logoFile"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="mt-1 w-full text-sm text-muted file:mr-3 file:rounded file:border-0 file:bg-accent file:px-3 file:py-1.5 file:text-white"
+                  />
+                </label>
+                <label className="flex items-center gap-2 text-xs text-muted sm:col-span-2">
+                  <input type="checkbox" name="removeLogo" className="rounded" />
+                  Quitar logo guardado
+                </label>
+                <label className="block text-xs text-muted">
+                  Orden (menor = primero)
+                  <input
+                    name="sortOrder"
+                    type="number"
+                    defaultValue={s.sortOrder}
+                    className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
+                  />
+                </label>
+              </div>
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={busyKey === itemKey}
+                  className="btn-primary text-sm"
+                >
+                  {busyKey === itemKey ? "Guardando…" : "Guardar"}
+                </button>
+                <AdminDeleteButton
+                  label={s.name}
+                  onDelete={deleteSponsor.bind(null, s.id)}
                 />
-              </label>
-              <label className="block text-xs text-muted">
-                Enlace al sitio
-                <input
-                  name="websiteUrl"
-                  defaultValue={s.websiteUrl ?? ""}
-                  type="url"
-                  className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
+                <AdminFormFeedback
+                  success={feedback?.key === itemKey ? feedback.success : null}
+                  error={feedback?.key === itemKey ? feedback.error : null}
                 />
-              </label>
-              <label className="block text-xs text-muted sm:col-span-2">
-                Logo (archivo local, opcional, máx. {UPLOAD_MAX_MB} MB)
-                <input
-                  type="file"
-                  name="logoFile"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  className="mt-1 w-full text-sm text-muted file:mr-3 file:rounded file:border-0 file:bg-accent file:px-3 file:py-1.5 file:text-white"
-                />
-              </label>
-              <label className="flex items-center gap-2 text-xs text-muted sm:col-span-2">
-                <input type="checkbox" name="removeLogo" className="rounded" />
-                Quitar logo guardado
-              </label>
-              <label className="block text-xs text-muted">
-                Orden (menor = primero)
-                <input
-                  name="sortOrder"
-                  type="number"
-                  defaultValue={s.sortOrder}
-                  className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
-                />
-              </label>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <button
-                type="submit"
-                disabled={pending}
-                className="btn-primary text-sm"
-              >
-                Guardar
-              </button>
-              <AdminDeleteButton
-                label={s.name}
-                onDelete={deleteSponsor.bind(null, s.id)}
-              />
-            </div>
-          </form>
-        ))}
+              </div>
+            </form>
+          );
+        })}
       </div>
 
-      <button
-        type="button"
-        disabled={pending}
-        onClick={() =>
-          startTransition(async () => {
-            await createEmptySponsor();
-            router.refresh();
-          })
-        }
-        className="btn-secondary inline-flex items-center gap-2 text-sm"
-      >
-        <Plus size={16} aria-hidden />
-        Agregar patrocinador
-      </button>
-
-      {error && (
-        <p className="rounded-lg border border-red-900/50 bg-red-950/40 p-4 text-sm text-red-300">
-          {error}
-        </p>
-      )}
-      {message && <p className="text-sm text-green-400">{message}</p>}
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          disabled={busyKey === "add"}
+          onClick={() =>
+            runAction(
+              "add",
+              async () => {
+                await createEmptySponsor();
+              },
+              "Patrocinador agregado.",
+            )
+          }
+          className="btn-secondary inline-flex items-center gap-2 text-sm"
+        >
+          <Plus size={16} aria-hidden />
+          {busyKey === "add" ? "Agregando…" : "Agregar patrocinador"}
+        </button>
+        <AdminFormFeedback
+          success={feedback?.key === "add" ? feedback.success : null}
+          error={feedback?.key === "add" ? feedback.error : null}
+        />
+      </div>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { PersonAvatar } from "@/components/ui/PersonAvatar";
 import { isLocalUpload } from "@/lib/upload-limits";
 import { UPLOAD_MAX_MB } from "@/lib/upload-limits";
 import { getUploadValidationError } from "./submitWithUploadCheck";
+import { AdminFormFeedback } from "./AdminFormFeedback";
 
 type Team = { id: string; name: string };
 
@@ -32,6 +33,7 @@ export function PlayerPhotoForm({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const fullName = `${firstName} ${lastName}`;
 
   return (
@@ -40,6 +42,7 @@ export function PlayerPhotoForm({
       onSubmit={(e) => {
         e.preventDefault();
         setError(null);
+        setSuccess(null);
         const fd = new FormData(e.currentTarget);
         const uploadError = getUploadValidationError(fd, "photoFile");
         if (uploadError) {
@@ -49,6 +52,7 @@ export function PlayerPhotoForm({
         startTransition(async () => {
           try {
             await updatePlayer(playerId, fd);
+            setSuccess("Jugador guardado.");
             router.refresh();
           } catch (err) {
             setError(
@@ -140,12 +144,12 @@ export function PlayerPhotoForm({
       <p className="text-xs text-muted">
         La división se toma del equipo asignado.
       </p>
-      {error && (
-        <p className="text-sm text-red-400">{error}</p>
-      )}
-      <button type="submit" disabled={pending} className="btn-primary">
-        {pending ? "Guardando…" : "Guardar cambios"}
-      </button>
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="submit" disabled={pending} className="btn-primary">
+          {pending ? "Guardando…" : "Guardar cambios"}
+        </button>
+        <AdminFormFeedback success={success} error={error} />
+      </div>
     </form>
   );
 }
