@@ -1,3 +1,4 @@
+import { resolveVenueMapEmbedUrl } from "./constants";
 import { prisma } from "./prisma";
 import { getSiteConfig, divisionLabel, getDivisionGroups } from "./site-config";
 
@@ -140,10 +141,15 @@ export async function getTeamBySlug(slug: string) {
 }
 
 export async function getActiveTournament() {
-  return prisma.tournament.findFirst({
+  const tournament = await prisma.tournament.findFirst({
     where: { active: true },
     orderBy: { startDate: "asc" },
   });
+  if (!tournament) return null;
+  return {
+    ...tournament,
+    venueMapUrl: resolveVenueMapEmbedUrl(tournament.venueMapUrl),
+  };
 }
 
 export async function getSiteStats() {

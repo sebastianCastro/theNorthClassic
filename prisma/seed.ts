@@ -279,7 +279,7 @@ async function main() {
       location: "Chihuahua, Chihuahua",
       venue: "Gimnasio del Instituto La Salle Chihuahua",
       venueMapUrl:
-        "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3593.0!2d-100.3!3d25.67!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1",
+        "https://www.google.com/maps?q=Gimnasio+del+Instituto+La+Salle+Chihuahua,+Av.+Pol%C3%ADtecnico+Nacional+5100,+Chihuahua,+Chihuahua,+Mexico&hl=es&z=17&output=embed",
       startDate: new Date("2026-06-14"),
       endDate: new Date("2026-06-18"),
       active: true,

@@ -103,6 +103,8 @@ export default async function TorneoPage() {
                 src={tournament.venueMapUrl}
                 className="min-h-[300px] w-full rounded-lg border border-border"
                 loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                allowFullScreen
               />
             )}
           </div>

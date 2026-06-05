@@ -16,6 +16,28 @@ export const TOURNAMENT_LOCATION = {
   label: "Chihuahua, Chihuahua, México",
 } as const;
 
+/** Google Maps iframe embed for Instituto La Salle Chihuahua (no API key). */
+export const TOURNAMENT_VENUE_MAP_EMBED_URL =
+  "https://www.google.com/maps?q=Gimnasio+del+Instituto+La+Salle+Chihuahua,+Av.+Pol%C3%ADtecnico+Nacional+5100,+Chihuahua,+Chihuahua,+Mexico&hl=es&z=17&output=embed";
+
+const BROKEN_VENUE_MAP_EMBED_URL =
+  "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3593.0!2d-100.3!3d25.67!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1";
+
+/** Replace hand-crafted partial `pb=` embed URLs that Google rejects. */
+export function resolveVenueMapEmbedUrl(
+  url: string | null | undefined,
+): string | null {
+  if (!url?.trim()) return null;
+  const trimmed = url.trim();
+  if (
+    trimmed === BROKEN_VENUE_MAP_EMBED_URL ||
+    (trimmed.includes("/maps/embed?pb=") && trimmed.length < 200)
+  ) {
+    return TOURNAMENT_VENUE_MAP_EMBED_URL;
+  }
+  return trimmed;
+}
+
 /** Default meta description (search/social); visible footer copy uses SITE.description. */
 export const SITE_SEO_DESCRIPTION =
   "Torneo de basketball juvenil y showcase universitario en Chihuahua, México. The North Classic: exposición ante reclutadores, estadísticas y cobertura oficial.";
