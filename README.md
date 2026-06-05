@@ -24,8 +24,7 @@ npm run dev
 ```
 
 - Sitio: http://localhost:3000
-- Admin: http://localhost:3000/admin/login
-- Credenciales seed: `admin@thenorthclassic.mx` / `admin123`
+- Admin: http://localhost:3000/admin/login (credenciales definidas en `prisma/seed.ts`; no publicar en el repo)
 
 ## Estructura del proyecto
 

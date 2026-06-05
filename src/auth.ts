@@ -22,8 +22,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
+        const identifier = String(credentials.email).trim().toLowerCase();
+        const email =
+          identifier === "admin" ? "admin@thenorthclassic.mx" : identifier;
+
         const user = await prisma.user.findUnique({
-          where: { email: String(credentials.email) },
+          where: { email },
         });
 
         if (!user?.passwordHash) return null;

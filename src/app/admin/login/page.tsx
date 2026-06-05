@@ -40,14 +40,15 @@ export default function AdminLoginPage() {
         <div className="mt-8 space-y-4">
           <div>
             <label htmlFor="email" className="text-xs uppercase text-muted">
-              Correo
+              Usuario
             </label>
             <input
               id="email"
               name="email"
-              type="email"
+              type="text"
               required
-              autoComplete="email"
+              autoComplete="username"
+              placeholder="admin"
               className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
             />
           </div>

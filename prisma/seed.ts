@@ -8,11 +8,15 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  const passwordHash = await bcrypt.hash("admin123", 12);
+  const passwordHash = await bcrypt.hash("northClassic2026!", 12);
 
   await prisma.user.upsert({
     where: { email: "admin@thenorthclassic.mx" },
-    update: {},
+    update: {
+      passwordHash,
+      name: "Administrador",
+      role: "ADMIN",
+    },
     create: {
       email: "admin@thenorthclassic.mx",
       name: "Administrador",
@@ -384,7 +388,7 @@ async function main() {
 
 
   console.log("✓ Seed completado");
-  console.log("  Admin: admin@thenorthclassic.mx / admin123");
+  console.log("  Admin: usuario admin (configurado en seed)");
 }
 
 main()

@@ -32,7 +32,8 @@ function MatchRow({
   round: string | null;
   status: string;
 }) {
-  const isFinal = status === "FINAL" && homeScore != null && awayScore != null;
+  const isFinal =
+    homeScore != null && awayScore != null && status !== "SCHEDULED";
   const homeWins = isFinal && homeScore! > awayScore!;
   const awayWins = isFinal && awayScore! > homeScore!;
 
@@ -68,7 +69,6 @@ function MatchRow({
 
 export default async function PartidosPage() {
   const divisions = await getGamesByDivision();
-  const now = Date.now();
 
   return (
     <div className="section-padding">
@@ -84,16 +84,10 @@ export default async function PartidosPage() {
         ) : (
           divisions.map(({ label, games }) => {
             const upcoming = games.filter(
-              (g) =>
-                g.status !== "FINAL" &&
-                new Date(g.scheduledAt).getTime() >= now
+              (g) => g.homeScore == null || g.awayScore == null,
             );
             const completed = games.filter(
-              (g) =>
-                g.status === "FINAL" ||
-                (g.homeScore != null &&
-                  g.awayScore != null &&
-                  new Date(g.scheduledAt).getTime() < now)
+              (g) => g.homeScore != null && g.awayScore != null,
             );
 
             return (

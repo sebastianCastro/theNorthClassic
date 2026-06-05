@@ -10,6 +10,7 @@ import {
   normalizeCsvRow,
   normalizeGenderDivision,
 } from "@/lib/csv-import";
+import { parseScoreField, resolveGameStatusFromScores } from "@/lib/game-scores";
 import { syncStandingsFromGames } from "@/lib/team-stats";
 import {
   deleteUploadedFile,
@@ -300,21 +301,15 @@ export async function deletePlayer(id: string) {
 
 export async function updateGameScore(id: string, formData: FormData) {
   await requireAdmin();
-  const homeScoreRaw = formData.get("homeScore");
-  const awayScoreRaw = formData.get("awayScore");
-  const status = String(formData.get("status") || "FINAL");
+  const homeScore = parseScoreField(formData.get("homeScore"));
+  const awayScore = parseScoreField(formData.get("awayScore"));
+  const status = resolveGameStatusFromScores(homeScore, awayScore);
 
   await prisma.game.update({
     where: { id },
     data: {
-      homeScore:
-        homeScoreRaw !== null && homeScoreRaw !== ""
-          ? parseInt(String(homeScoreRaw), 10)
-          : null,
-      awayScore:
-        awayScoreRaw !== null && awayScoreRaw !== ""
-          ? parseInt(String(awayScoreRaw), 10)
-          : null,
+      homeScore,
+      awayScore,
       status,
     },
   });

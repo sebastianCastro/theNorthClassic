@@ -6,6 +6,7 @@ import { upsertGame, updateGameScore, deleteGame } from "@/app/admin/actions";
 import { AdminDeleteButton } from "./AdminDeleteButton";
 import { formatDateTimeMX } from "@/lib/utils";
 import { ROUND_PRESETS, ROUND_CUSTOM } from "@/lib/game-rounds";
+import { isGamePlayed } from "@/lib/game-scores";
 
 type Team = { id: string; name: string; genderDivision: string; categoryDivision: string };
 
@@ -22,7 +23,11 @@ type Game = {
 };
 
 export function GameAdminForm({ teams, games }: { teams: Team[]; games: Game[] }) {
-  const [pending, startTransition] = useTransition();
+  const [createPending, startCreateTransition] = useTransition();
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const [createMessage, setCreateMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [roundPreset, setRoundPreset] = useState<string>(ROUND_PRESETS[0]);
   const router = useRouter();
 
@@ -30,10 +35,21 @@ export function GameAdminForm({ teams, games }: { teams: Team[]; games: Game[] }
     <div className="space-y-12">
       <form
         action={(fd) =>
-          startTransition(async () => {
-            fd.set("roundPreset", roundPreset);
-            await upsertGame(fd);
-            router.refresh();
+          startCreateTransition(async () => {
+            setError(null);
+            setCreateMessage(null);
+            try {
+              fd.set("roundPreset", roundPreset);
+              await upsertGame(fd);
+              setCreateMessage("Partido creado.");
+              router.refresh();
+            } catch (err) {
+              setError(
+                err instanceof Error
+                  ? err.message
+                  : "No se pudo crear el partido.",
+              );
+            }
           })
         }
         className="space-y-4 rounded-lg border border-border p-6"
@@ -95,58 +111,130 @@ export function GameAdminForm({ teams, games }: { teams: Team[]; games: Game[] }
             </label>
           )}
         </div>
-        <button type="submit" disabled={pending} className="btn-primary">
-          Crear partido
+        <button type="submit" disabled={createPending} className="btn-primary">
+          {createPending ? "Creando…" : "Crear partido"}
         </button>
+        {createMessage && (
+          <p className="text-sm text-green-400" role="status">
+            {createMessage}
+          </p>
+        )}
+        {error && (
+          <p className="text-sm text-red-400" role="alert">
+            {error}
+          </p>
+        )}
       </form>
 
       <div>
-        <h2 className="mb-4 font-semibold text-white">Partidos ({games.length})</h2>
+        <h2 className="mb-2 font-semibold text-white">Partidos ({games.length})</h2>
+        <p className="mb-4 text-sm text-muted">
+          Deja los marcadores vacíos si el partido aún no se juega. Captura ambos
+          cuando termine para marcarlo como jugado.
+        </p>
         <ul className="space-y-6">
-          {games.map((g) => (
-            <li key={g.id} className="rounded-lg border border-border p-4">
-              <p className="text-sm text-muted">
-                {formatDateTimeMX(g.scheduledAt)}
-                {g.round ? ` · ${g.round}` : ""}
-              </p>
-              <p className="mt-1 font-medium text-white">
-                {g.homeTeam.name} vs {g.awayTeam.name}
-              </p>
-              <form
-                action={(fd) =>
-                  startTransition(async () => {
-                    await updateGameScore(g.id, fd);
-                    router.refresh();
-                  })
-                }
-                className="mt-4 flex flex-wrap items-end gap-3"
-              >
-                <label className="text-xs text-muted">
-                  Local
-                  <input type="number" name="homeScore" defaultValue={g.homeScore ?? ""} className="mt-1 w-20 rounded border border-border bg-black px-3 py-2 text-white" />
-                </label>
-                <label className="text-xs text-muted">
-                  Visitante
-                  <input type="number" name="awayScore" defaultValue={g.awayScore ?? ""} className="mt-1 w-20 rounded border border-border bg-black px-3 py-2 text-white" />
-                </label>
-                <label className="text-xs text-muted">
-                  Estado
-                  <select name="status" defaultValue={g.status} className="mt-1 rounded border border-border bg-black px-3 py-2 text-white">
-                    <option value="SCHEDULED">Programado</option>
-                    <option value="LIVE">En vivo</option>
-                    <option value="FINAL">Final</option>
-                  </select>
-                </label>
-                <button type="submit" disabled={pending} className="btn-secondary text-xs">
-                  Guardar
-                </button>
-              </form>
-              <div className="mt-3">
-                <AdminDeleteButton label="este partido" onDelete={deleteGame.bind(null, g.id)} />
-              </div>
-            </li>
-          ))}
+          {games.map((g) => {
+            const played = isGamePlayed(g.homeScore, g.awayScore, g.status);
+            const formKey = `${g.id}-${g.homeScore ?? ""}-${g.awayScore ?? ""}-${g.status}`;
+
+            return (
+              <li key={g.id} className="rounded-lg border border-border p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm text-muted">
+                      {formatDateTimeMX(g.scheduledAt)}
+                      {g.round ? ` · ${g.round}` : ""}
+                      {g.venue ? ` · ${g.venue}` : ""}
+                    </p>
+                    <p className="mt-1 font-medium text-white">
+                      {g.homeTeam.name} vs {g.awayTeam.name}
+                    </p>
+                  </div>
+                  <span
+                    className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                      played
+                        ? "border-accent/40 bg-accent/10 text-accent"
+                        : "border-border text-muted"
+                    }`}
+                  >
+                    {played
+                      ? `Jugado · ${g.homeScore}-${g.awayScore}`
+                      : "Por jugar"}
+                  </span>
+                </div>
+                <form
+                  key={formKey}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    setError(null);
+                    setSavedId(null);
+                    const fd = new FormData(e.currentTarget);
+                    setSavingId(g.id);
+                    void (async () => {
+                      try {
+                        await updateGameScore(g.id, fd);
+                        setSavedId(g.id);
+                        router.refresh();
+                      } catch (err) {
+                        setError(
+                          err instanceof Error
+                            ? err.message
+                            : "No se pudo guardar el marcador.",
+                        );
+                      } finally {
+                        setSavingId(null);
+                      }
+                    })();
+                  }}
+                  className="mt-4 flex flex-wrap items-end gap-3"
+                >
+                  <label className="text-xs text-muted">
+                    Local
+                    <input
+                      type="number"
+                      name="homeScore"
+                      min={0}
+                      placeholder="—"
+                      defaultValue={g.homeScore ?? ""}
+                      className="mt-1 w-20 rounded border border-border bg-black px-3 py-2 text-white"
+                    />
+                  </label>
+                  <label className="text-xs text-muted">
+                    Visitante
+                    <input
+                      type="number"
+                      name="awayScore"
+                      min={0}
+                      placeholder="—"
+                      defaultValue={g.awayScore ?? ""}
+                      className="mt-1 w-20 rounded border border-border bg-black px-3 py-2 text-white"
+                    />
+                  </label>
+                  <button
+                    type="submit"
+                    disabled={savingId === g.id}
+                    className="btn-secondary text-xs"
+                  >
+                    {savingId === g.id ? "Guardando…" : "Guardar"}
+                  </button>
+                  {savedId === g.id && (
+                    <p className="text-sm text-green-400" role="status">
+                      Guardado.
+                    </p>
+                  )}
+                </form>
+                <div className="mt-3">
+                  <AdminDeleteButton label="este partido" onDelete={deleteGame.bind(null, g.id)} />
+                </div>
+              </li>
+            );
+          })}
         </ul>
+        {error && !savedId && (
+          <p className="mt-4 text-sm text-red-400" role="alert">
+            {error}
+          </p>
+        )}
       </div>
     </div>
   );
