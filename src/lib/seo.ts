@@ -23,14 +23,20 @@ export function buildMetadata({
   type = "website",
 }: MetaInput): Metadata {
   const url = `${SITE.url}${path}`;
-  const ogImage = image ?? `${SITE.url}/og-default.jpg`;
+  const ogImage = image ?? `${SITE.url}/android-chrome-512x512.png`;
 
   return {
+    metadataBase: new URL(SITE.url),
     title: `${title} | ${SITE.name}`,
     description,
+    manifest: "/site.webmanifest",
     icons: {
-      icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
-      apple: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+      icon: [
+        { url: "/favicon.ico", sizes: "any" },
+        { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+        { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      ],
+      apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
     },
     alternates: { canonical: url },
     openGraph: {
