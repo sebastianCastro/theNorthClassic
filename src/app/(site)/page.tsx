@@ -7,6 +7,8 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { StatCounter } from "@/components/ui/StatCounter";
 import { getFeaturedTeams, getSiteStats, getSponsorsForHome } from "@/lib/data";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const [teams, stats, sponsors] = await Promise.all([
     getFeaturedTeams(),

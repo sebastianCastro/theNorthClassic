@@ -20,6 +20,19 @@ import {
 } from "@/lib/uploads";
 import { slugify } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
+
+function revalidateHomeAndTeams(teamSlug?: string | null) {
+  revalidatePath("/", "page");
+  revalidatePath("/equipos", "page");
+  if (teamSlug) {
+    revalidatePath(`/equipos/${teamSlug}`, "page");
+  }
+}
+
+function revalidateAfterGameChange() {
+  revalidateHomeAndTeams();
+  revalidatePath("/partidos", "page");
+}
 import Papa from "papaparse";
 
 async function requireAdmin() {
@@ -226,7 +239,7 @@ export async function importTeamsCsv(csvText: string) {
     }
   }
 
-  revalidatePath("/equipos", "page");
+  revalidateHomeAndTeams();
   revalidatePath("/admin");
 
   const relinked = await linkPlayersToTeamsByImportName();
@@ -286,9 +299,13 @@ export async function linkPlayersToTeamsByImportName() {
 
 export async function deleteTeam(id: string) {
   await requireAdmin();
+  const team = await prisma.team.findUnique({
+    where: { id },
+    select: { slug: true },
+  });
   await prisma.player.updateMany({ where: { teamId: id }, data: { teamId: null } });
   await prisma.team.delete({ where: { id } });
-  revalidatePath("/equipos", "page");
+  revalidateHomeAndTeams(team?.slug);
   revalidatePath("/admin/equipos");
 }
 
@@ -315,8 +332,7 @@ export async function updateGameScore(id: string, formData: FormData) {
   });
 
   await syncStandingsFromGames();
-  revalidatePath("/partidos", "page");
-  revalidatePath("/equipos", "page");
+  revalidateAfterGameChange();
   revalidatePath("/admin/partidos");
 }
 
@@ -324,8 +340,7 @@ export async function deleteGame(id: string) {
   await requireAdmin();
   await prisma.game.delete({ where: { id } });
   await syncStandingsFromGames();
-  revalidatePath("/partidos", "page");
-  revalidatePath("/equipos", "page");
+  revalidateAfterGameChange();
   revalidatePath("/admin/partidos");
 }
 
@@ -379,8 +394,7 @@ export async function upsertGame(formData: FormData) {
   }
 
   await syncStandingsFromGames();
-  revalidatePath("/partidos", "page");
-  revalidatePath("/equipos", "page");
+  revalidateAfterGameChange();
   revalidatePath("/admin/partidos");
 }
 
@@ -393,6 +407,10 @@ export async function deleteMedia(id: string) {
 
 export async function updateTeam(id: string, formData: FormData) {
   await requireAdmin();
+  const existing = await prisma.team.findUnique({
+    where: { id },
+    select: { slug: true },
+  });
   await prisma.team.update({
     where: { id },
     data: {
@@ -404,7 +422,7 @@ export async function updateTeam(id: string, formData: FormData) {
       description: (formData.get("description") as string) || null,
     },
   });
-  revalidatePath("/equipos", "page");
+  revalidateHomeAndTeams(existing?.slug);
   revalidatePath("/admin/equipos");
 }
 
