@@ -45,3 +45,6 @@ next-env.d.ts
 # uploaded media (keep folder via .gitkeep)
 /public/uploads/**/*
 !/public/uploads/.gitkeep
+
+# staff-only docs (not part of the deployed site)
+/docs/MANUAL_ADMINISTRADOR.md
