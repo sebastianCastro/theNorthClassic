@@ -1,8 +1,9 @@
 import Script from "next/script";
+import { Analytics as VercelAnalytics } from "@vercel/analytics/next";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
-export function Analytics() {
+function GoogleAnalytics() {
   if (!GA_ID) return null;
 
   return (
@@ -19,6 +20,15 @@ export function Analytics() {
           gtag('config', '${GA_ID}', { anonymize_ip: true });
         `}
       </Script>
+    </>
+  );
+}
+
+export function Analytics() {
+  return (
+    <>
+      <GoogleAnalytics />
+      <VercelAnalytics />
     </>
   );
 }
