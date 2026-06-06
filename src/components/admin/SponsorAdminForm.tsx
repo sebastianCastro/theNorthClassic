@@ -12,7 +12,7 @@ import { SponsorLogo } from "@/components/sponsors/SponsorLogo";
 import { AdminDeleteButton } from "./AdminDeleteButton";
 import { AdminFormFeedback } from "./AdminFormFeedback";
 import { Plus } from "lucide-react";
-import { UPLOAD_MAX_MB } from "@/lib/upload-limits";
+import { UPLOAD_MAX_MB, isLocalUpload } from "@/lib/upload-limits";
 import { getUploadValidationError } from "./submitWithUploadCheck";
 
 type Sponsor = {
@@ -142,10 +142,17 @@ export function SponsorAdminForm({
                 Patrocinador {index + 1}
               </p>
               <input type="hidden" name="id" value={s.id} />
+              <input
+                type="hidden"
+                name="existingPhotoUrl"
+                value={s.logoUrl ?? ""}
+              />
               <div className="mb-4 flex items-center gap-4">
                 <SponsorLogo name={s.name} logoUrl={s.logoUrl} height={48} />
                 <p className="text-xs text-muted">
-                  Sin logo se muestran iniciales en el sitio público.
+                  Enlace externo o archivo local (máx. {UPLOAD_MAX_MB} MB). El
+                  archivo tiene prioridad si eliges ambos. Sin logo se muestran
+                  iniciales en el sitio público.
                 </p>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -164,6 +171,18 @@ export function SponsorAdminForm({
                     name="websiteUrl"
                     defaultValue={s.websiteUrl ?? ""}
                     type="url"
+                    className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
+                  />
+                </label>
+                <label className="block text-xs text-muted sm:col-span-2">
+                  Enlace del logo (opcional)
+                  <input
+                    name="logoUrl"
+                    defaultValue={
+                      s.logoUrl && !isLocalUpload(s.logoUrl) ? s.logoUrl : ""
+                    }
+                    type="url"
+                    placeholder="https://..."
                     className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
                   />
                 </label>

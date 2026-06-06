@@ -562,16 +562,20 @@ export async function upsertSponsor(formData: FormData) {
   const name = String(formData.get("name")).trim();
   const slug = slugify(name);
   const removeLogo = formData.get("removeLogo") === "on";
-  const file = formData.get("logoFile") as File | null;
-
   let logoUrl = existing.logoUrl;
 
   if (removeLogo) {
     if (isLocalUpload(logoUrl)) await deleteUploadedFile(logoUrl);
     logoUrl = null;
-  } else if (file?.size) {
-    if (isLocalUpload(logoUrl)) await deleteUploadedFile(logoUrl);
-    logoUrl = await saveUploadedImage(file, "sponsors", id);
+  } else {
+    logoUrl = await resolvePhotoFromForm(formData, {
+      entityId: id,
+      folder: "sponsors",
+      existingUrl: existing.logoUrl,
+      fileField: "logoFile",
+      urlField: "logoUrl",
+      allowExternalUrl: true,
+    });
   }
 
   await prisma.sponsor.update({

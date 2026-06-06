@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { isLocalUpload } from "@/lib/upload-limits";
 import {
   displayNameColor,
   displayNameInitials,
@@ -22,14 +23,30 @@ export function SponsorLogo({
   const bg = displayNameColor(name);
 
   if (isValidImageUrl(logoUrl)) {
+    const src = logoUrl!.trim();
+    const imageClass = `w-auto object-contain ${className}`;
+    const imageStyle = { height, maxWidth: 160 };
+
+    if (isLocalUpload(src)) {
+      return (
+        <Image
+          src={src}
+          alt={name}
+          width={160}
+          height={height}
+          className={imageClass}
+          style={imageStyle}
+        />
+      );
+    }
+
     return (
-      <Image
-        src={logoUrl!}
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
         alt={name}
-        width={160}
-        height={height}
-        className={`w-auto object-contain ${className}`}
-        style={{ height, maxWidth: 160 }}
+        className={imageClass}
+        style={imageStyle}
       />
     );
   }
