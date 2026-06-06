@@ -99,6 +99,17 @@ export function getDivisionGroups(config: SiteConfig): DivisionGroup[] {
   return groups;
 }
 
+export type FaqItem = { q: string; a: string };
+
+/** FAQs shown on /torneo: site config overrides tournament seed defaults. */
+export function resolveTorneoFaqs(
+  siteFaqs: FaqItem[],
+  tournamentFaqRaw: string | null | undefined
+): FaqItem[] {
+  if (siteFaqs.length > 0) return siteFaqs;
+  return parseJsonField<FaqItem[]>(tournamentFaqRaw) ?? [];
+}
+
 export function isPublicDivision(
   group: { categoryDivision: string; genderDivision: string },
   config: SiteConfig

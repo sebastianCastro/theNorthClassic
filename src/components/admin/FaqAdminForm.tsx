@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { saveFaqs } from "@/app/admin/actions";
 import { Plus, Trash2 } from "lucide-react";
 import { AdminFormFeedback } from "./AdminFormFeedback";
@@ -9,10 +9,12 @@ import { AdminFormFeedback } from "./AdminFormFeedback";
 type FaqItem = { q: string; a: string };
 
 export function FaqAdminForm({ initialFaqs }: { initialFaqs: FaqItem[] }) {
-  const [faqs, setFaqs] = useState<FaqItem[]>(
-    initialFaqs.length > 0 ? initialFaqs : []
-  );
+  const [faqs, setFaqs] = useState<FaqItem[]>(initialFaqs);
   const router = useRouter();
+
+  useEffect(() => {
+    setFaqs(initialFaqs);
+  }, [initialFaqs]);
   const [pending, startTransition] = useTransition();
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

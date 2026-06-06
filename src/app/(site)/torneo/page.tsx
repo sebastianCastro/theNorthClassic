@@ -8,11 +8,13 @@ import {
   getRecruitersForTorneo,
 } from "@/lib/data";
 import { FaqAnswer } from "@/components/torneo/FaqAnswer";
-import { getSiteConfig } from "@/lib/site-config";
+import { getSiteConfig, resolveTorneoFaqs } from "@/lib/site-config";
 import { getTorneoDivisions } from "@/lib/tournament-divisions";
 import { buildMetadata, sportsEventJsonLd } from "@/lib/seo";
 import { SITE } from "@/lib/constants";
-import { formatDateMX, parseJsonField } from "@/lib/utils";
+import { formatDateMX } from "@/lib/utils";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = buildMetadata({
   title: "Torneo",
@@ -39,10 +41,7 @@ export default async function TorneoPage() {
     );
   }
 
-  const faqFromTournament =
-    parseJsonField<{ q: string; a: string }[]>(tournament.faq) ?? [];
-  const faq =
-    siteConfig.faqs.length > 0 ? siteConfig.faqs : faqFromTournament;
+  const faq = resolveTorneoFaqs(siteConfig.faqs, tournament.faq);
   const eventLd = sportsEventJsonLd({
     name: tournament.name,
     edition: tournament.edition,
