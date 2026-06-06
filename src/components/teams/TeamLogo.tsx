@@ -1,5 +1,5 @@
-import Image from "next/image";
 import { teamAvatarColor, teamInitials, isValidImageUrl } from "@/lib/team-logo";
+import { RemoteImage } from "@/components/ui/RemoteImage";
 
 type TeamLogoProps = {
   name: string;
@@ -19,7 +19,7 @@ export function TeamLogo({
 
   if (isValidImageUrl(logoUrl)) {
     return (
-      <Image
+      <RemoteImage
         src={logoUrl!}
         alt={`Logo de ${name}`}
         width={size}

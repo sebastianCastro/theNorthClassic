@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { RemoteImage } from "@/components/ui/RemoteImage";
 import { divisionLabel, STAT_LEADER_KEYS } from "@/lib/site-config";
 import {
   getSiteConfig,
@@ -63,7 +63,7 @@ export async function StatLeadersSection() {
                         className={`card-hover block rounded-lg border border-border bg-surface p-3 ${cellClass}`}
                       >
                         <div className="relative mx-auto h-16 w-16 overflow-hidden rounded-full">
-                          <Image
+                          <RemoteImage
                             src={
                               player.photoUrl ??
                               `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=9B111E&color=fff`

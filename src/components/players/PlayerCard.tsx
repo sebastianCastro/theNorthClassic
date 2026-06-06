@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { POSITION_LABELS } from "@/lib/constants";
+import { RemoteImage } from "@/components/ui/RemoteImage";
 import { isValidImageUrl } from "@/lib/team-logo";
 import { formatHeight } from "@/lib/utils";
 
@@ -35,7 +35,7 @@ export function PlayerCard({ player }: { player: PlayerCardData }) {
       aria-label={`Ver perfil de ${name}`}
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-black">
-        <Image
+        <RemoteImage
           src={playerPhotoUrl(player)}
           alt={name}
           fill

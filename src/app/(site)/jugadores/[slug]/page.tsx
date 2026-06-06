@@ -1,8 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PlayerGallery } from "@/components/players/PlayerGallery";
 import { PlayerResumeButton } from "@/components/players/PlayerResumeButton";
+import { RemoteImage } from "@/components/ui/RemoteImage";
 import { getPlayerBySlug } from "@/lib/data";
 import { POSITION_LABELS, SITE } from "@/lib/constants";
 import { divisionLabel } from "@/lib/site-config";
@@ -97,7 +97,7 @@ export default async function PlayerProfilePage({ params }: Props) {
 
           <div className="grid gap-10 lg:grid-cols-[320px_1fr] lg:gap-16">
             <div className="relative mx-auto aspect-[3/4] w-full max-w-xs overflow-hidden rounded-lg border border-border lg:mx-0">
-              <Image
+              <RemoteImage
                 src={
                   player.photoUrl ??
                   `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=9B111E&color=fff&size=512`

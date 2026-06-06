@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useCallback } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { RemoteImage } from "@/components/ui/RemoteImage";
 
 type LightboxProps = {
   images: { url: string; caption?: string | null }[];
@@ -80,7 +80,7 @@ export function Lightbox({
       )}
 
       <div className="relative max-h-[80vh] w-full max-w-4xl">
-        <Image
+        <RemoteImage
           src={current.url}
           alt={current.caption ?? "Foto del jugador"}
           width={1200}

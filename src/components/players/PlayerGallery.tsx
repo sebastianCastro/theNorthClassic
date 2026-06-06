@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
+import { RemoteImage } from "@/components/ui/RemoteImage";
 import { Lightbox } from "@/components/ui/Lightbox";
 
 type Photo = { url: string; caption?: string | null };
@@ -19,7 +19,7 @@ export function PlayerGallery({ photos }: { photos: Photo[] }) {
             onClick={() => setLightboxIndex(i)}
             className="relative aspect-square overflow-hidden rounded-lg border border-border focus-visible:ring-2 focus-visible:ring-accent"
           >
-            <Image
+            <RemoteImage
               src={photo.url}
               alt={photo.caption ?? `Foto ${i + 1}`}
               fill

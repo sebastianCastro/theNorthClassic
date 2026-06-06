@@ -1,9 +1,9 @@
-import Image from "next/image";
 import {
   displayNameColor,
   displayNameInitials,
   isValidImageUrl,
 } from "@/lib/team-logo";
+import { RemoteImage } from "@/components/ui/RemoteImage";
 
 type PersonAvatarProps = {
   name: string;
@@ -30,7 +30,7 @@ export function PersonAvatar({
         className={`relative overflow-hidden ${radius} ${className}`}
         style={{ width: size, height: size }}
       >
-        <Image
+        <RemoteImage
           src={photoUrl!}
           alt={name}
           fill
