@@ -12,7 +12,7 @@ import { PersonAvatar } from "@/components/ui/PersonAvatar";
 import { AdminDeleteButton } from "./AdminDeleteButton";
 import { AdminFormFeedback } from "./AdminFormFeedback";
 import { Plus } from "lucide-react";
-import { UPLOAD_MAX_MB } from "@/lib/upload-limits";
+import { UPLOAD_MAX_MB, isLocalUpload } from "@/lib/upload-limits";
 import { getUploadValidationError } from "./submitWithUploadCheck";
 
 type Recruiter = {
@@ -143,10 +143,16 @@ export function RecruiterAdminForm({
                 Reclutador {index + 1}
               </p>
               <input type="hidden" name="id" value={r.id} />
+              <input
+                type="hidden"
+                name="existingPhotoUrl"
+                value={r.photoUrl ?? ""}
+              />
               <div className="mb-4 flex items-center gap-4">
                 <PersonAvatar name={r.name} photoUrl={r.photoUrl} size={72} />
                 <p className="text-xs text-muted">
-                  Foto guardada en el servidor. Sin foto = iniciales.
+                  Enlace externo o archivo local (máx. {UPLOAD_MAX_MB} MB). El
+                  archivo tiene prioridad si eliges ambos. Sin foto = iniciales.
                 </p>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -165,6 +171,18 @@ export function RecruiterAdminForm({
                     name="teamName"
                     defaultValue={r.teamName}
                     required
+                    className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
+                  />
+                </label>
+                <label className="block text-xs text-muted sm:col-span-2">
+                  Enlace de foto (opcional)
+                  <input
+                    name="photoUrl"
+                    defaultValue={
+                      r.photoUrl && !isLocalUpload(r.photoUrl) ? r.photoUrl : ""
+                    }
+                    type="url"
+                    placeholder="https://..."
                     className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
                   />
                 </label>

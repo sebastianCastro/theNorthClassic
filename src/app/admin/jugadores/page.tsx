@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { deletePlayer } from "../actions";
 import { AdminDeleteButton } from "@/components/admin/AdminDeleteButton";
+import { DeleteAllPlayersButton } from "@/components/admin/DeleteAllPlayersButton";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +60,8 @@ export default async function AdminJugadoresPage() {
       {players.length === 0 && (
         <p className="text-muted">No hay jugadores registrados.</p>
       )}
+
+      <DeleteAllPlayersButton count={players.length} />
     </div>
   );
 }

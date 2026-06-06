@@ -316,6 +316,36 @@ export async function deletePlayer(id: string) {
   revalidatePath("/admin/jugadores");
 }
 
+export async function deleteAllPlayers(confirmPassword: string) {
+  await requireAdmin();
+  const { verifyBulkDeletePassword } = await import("@/lib/admin-secrets");
+  verifyBulkDeletePassword(confirmPassword);
+
+  const players = await prisma.player.findMany({
+    select: { photoUrl: true },
+  });
+  for (const player of players) {
+    if (isLocalUpload(player.photoUrl)) {
+      await deleteUploadedFile(player.photoUrl);
+    }
+  }
+
+  const result = await prisma.player.deleteMany();
+
+  const { getSiteConfig, saveSiteConfig } = await import("@/lib/site-config");
+  const config = await getSiteConfig();
+  config.statLeaders = config.statLeaders.map(({ playerSlug: _, ...slot }) => slot);
+  config.featuredPlayerSlugs = [];
+  await saveSiteConfig(config);
+
+  revalidatePath("/jugadores", "page");
+  revalidatePath("/admin/jugadores");
+  revalidatePath("/admin/lideres");
+  revalidatePath("/", "page");
+
+  return result.count;
+}
+
 export async function updateGameScore(id: string, formData: FormData) {
   await requireAdmin();
   const homeScore = parseScoreField(formData.get("homeScore"));
@@ -611,16 +641,21 @@ export async function upsertRecruiter(formData: FormData) {
   const existing = await prisma.recruiter.findUnique({ where: { id } });
   if (!existing) throw new Error("Reclutador no encontrado");
 
-  const file = formData.get("photoFile") as File | null;
   const removePhoto = formData.get("removePhoto") === "on";
   let photoUrl = existing.photoUrl;
 
   if (removePhoto) {
     if (isLocalUpload(photoUrl)) await deleteUploadedFile(photoUrl);
     photoUrl = null;
-  } else if (file?.size) {
-    if (isLocalUpload(photoUrl)) await deleteUploadedFile(photoUrl);
-    photoUrl = await saveUploadedImage(file, "recruiters", id);
+  } else {
+    photoUrl = await resolvePhotoFromForm(formData, {
+      entityId: id,
+      folder: "recruiters",
+      existingUrl: existing.photoUrl,
+      fileField: "photoFile",
+      urlField: "photoUrl",
+      allowExternalUrl: true,
+    });
   }
 
   await prisma.recruiter.update({

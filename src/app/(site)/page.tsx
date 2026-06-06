@@ -30,9 +30,9 @@ export default async function HomePage() {
             align="center"
           />
           <div className="grid grid-cols-2 gap-10 sm:grid-cols-4">
-            <StatCounter value={stats.players} label="Jugadores" suffix="+" />
+            <StatCounter value={stats.players} label="Jugadores" />
             <StatCounter value={stats.teams} label="Equipos" />
-            <StatCounter value={stats.games} label="Partidos" suffix="+" />
+            <StatCounter value={stats.games} label="Partidos" />
             <StatCounter
               value={stats.scholarships}
               label="Becas obtenidas"
