@@ -1,5 +1,6 @@
 import Script from "next/script";
 import { Analytics as VercelAnalytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
@@ -29,6 +30,7 @@ export function Analytics() {
     <>
       <GoogleAnalytics />
       <VercelAnalytics />
+      <SpeedInsights />
     </>
   );
 }
