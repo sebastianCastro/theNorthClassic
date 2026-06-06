@@ -16,14 +16,17 @@ export const TOURNAMENT_LOCATION = {
   label: "Chihuahua, Chihuahua, México",
 } as const;
 
-/** Google Maps iframe embed for Instituto La Salle Chihuahua (no API key). */
+/** Google Maps iframe embed for Gym La Salle, Instituto La Salle Chihuahua. */
 export const TOURNAMENT_VENUE_MAP_EMBED_URL =
-  "https://www.google.com/maps?q=Gimnasio+del+Instituto+La+Salle+Chihuahua,+Av.+Pol%C3%ADtecnico+Nacional+5100,+Chihuahua,+Chihuahua,+Mexico&hl=es&z=17&output=embed";
+  "https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d3274.247532521542!2d-106.111524!3d28.6219927!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x86ea5cd67693c549%3A0x7b4f27cf692c260e!2sGym%20La%20Salle!5e1!3m2!1sen!2smx!4v1780783706529!5m2!1sen!2smx";
 
 const BROKEN_VENUE_MAP_EMBED_URL =
   "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3593.0!2d-100.3!3d25.67!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1";
 
-/** Replace hand-crafted partial `pb=` embed URLs that Google rejects. */
+const LEGACY_VENUE_MAP_EMBED_URL =
+  "https://www.google.com/maps?q=Gimnasio+del+Instituto+La+Salle+Chihuahua,+Av.+Pol%C3%ADtecnico+Nacional+5100,+Chihuahua,+Chihuahua,+Mexico&hl=es&z=17&output=embed";
+
+/** Replace invalid or outdated venue map URLs with the current embed. */
 export function resolveVenueMapEmbedUrl(
   url: string | null | undefined,
 ): string | null {
@@ -31,6 +34,7 @@ export function resolveVenueMapEmbedUrl(
   const trimmed = url.trim();
   if (
     trimmed === BROKEN_VENUE_MAP_EMBED_URL ||
+    trimmed === LEGACY_VENUE_MAP_EMBED_URL ||
     (trimmed.includes("/maps/embed?pb=") && trimmed.length < 200)
   ) {
     return TOURNAMENT_VENUE_MAP_EMBED_URL;
