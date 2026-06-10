@@ -2,17 +2,24 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { upsertGame, updateGameScore, deleteGame } from "@/app/admin/actions";
+import { upsertGame, deleteGame } from "@/app/admin/actions";
 import { AdminDeleteButton } from "./AdminDeleteButton";
 import { formatDateTimeMX } from "@/lib/utils";
 import { ROUND_PRESETS, ROUND_CUSTOM } from "@/lib/game-rounds";
 import { isGamePlayed } from "@/lib/game-scores";
 import { AdminFormFeedback } from "./AdminFormFeedback";
 
-type Team = { id: string; name: string; genderDivision: string; categoryDivision: string };
+type Team = {
+  id: string;
+  name: string;
+  genderDivision: string;
+  categoryDivision: string;
+};
 
 type Game = {
   id: string;
+  homeTeamId: string;
+  awayTeamId: string;
   scheduledAt: Date;
   venue: string | null;
   status: string;
@@ -23,16 +30,173 @@ type Game = {
   awayTeam: { name: string };
 };
 
-export function GameAdminForm({ teams, games }: { teams: Team[]; games: Game[] }) {
+function toDatetimeLocalValue(date: Date): string {
+  const d = new Date(date);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function resolveRoundPreset(round: string | null): {
+  preset: string;
+  custom: string;
+} {
+  if (!round) return { preset: "", custom: "" };
+  if ((ROUND_PRESETS as readonly string[]).includes(round)) {
+    return { preset: round, custom: "" };
+  }
+  return { preset: ROUND_CUSTOM, custom: round };
+}
+
+function GameFields({
+  teams,
+  game,
+  roundPreset,
+  onRoundPresetChange,
+}: {
+  teams: Team[];
+  game?: Game;
+  roundPreset: string;
+  onRoundPresetChange: (value: string) => void;
+}) {
+  const round = game ? resolveRoundPreset(game.round) : null;
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <label className="block text-xs text-muted">
+        Local
+        <select
+          name="homeTeamId"
+          required
+          defaultValue={game?.homeTeamId}
+          className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
+        >
+          <option value="">Seleccionar…</option>
+          {teams.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name} ({t.categoryDivision} {t.genderDivision})
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="block text-xs text-muted">
+        Visitante
+        <select
+          name="awayTeamId"
+          required
+          defaultValue={game?.awayTeamId}
+          className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
+        >
+          <option value="">Seleccionar…</option>
+          {teams.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name} ({t.categoryDivision} {t.genderDivision})
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="block text-xs text-muted">
+        Fecha y hora
+        <input
+          type="datetime-local"
+          name="scheduledAt"
+          required
+          defaultValue={game ? toDatetimeLocalValue(game.scheduledAt) : undefined}
+          className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
+        />
+      </label>
+      <label className="block text-xs text-muted">
+        Sede
+        <input
+          name="venue"
+          defaultValue={
+            game?.venue ?? "Gimnasio del Instituto La Salle Chihuahua"
+          }
+          className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
+        />
+      </label>
+      <label className="block text-xs text-muted">
+        Ronda
+        <select
+          name="roundPreset"
+          value={roundPreset}
+          onChange={(e) => onRoundPresetChange(e.target.value)}
+          className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
+        >
+          <option value="">Sin ronda</option>
+          {[...ROUND_PRESETS, ROUND_CUSTOM].map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </select>
+      </label>
+      {roundPreset === ROUND_CUSTOM && (
+        <label className="block text-xs text-muted">
+          Ronda personalizada
+          <input
+            name="roundCustom"
+            defaultValue={round?.custom}
+            className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
+          />
+        </label>
+      )}
+      <label className="block text-xs text-muted">
+        Marcador local
+        <input
+          type="number"
+          name="homeScore"
+          min={0}
+          placeholder="—"
+          defaultValue={game?.homeScore ?? ""}
+          className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
+        />
+      </label>
+      <label className="block text-xs text-muted">
+        Marcador visitante
+        <input
+          type="number"
+          name="awayScore"
+          min={0}
+          placeholder="—"
+          defaultValue={game?.awayScore ?? ""}
+          className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
+        />
+      </label>
+    </div>
+  );
+}
+
+export function GameAdminForm({
+  teams,
+  games,
+}: {
+  teams: Team[];
+  games: Game[];
+}) {
   const [createPending, startCreateTransition] = useTransition();
-  const [savingId, setSavingId] = useState<string | null>(null);
-  const [savedId, setSavedId] = useState<string | null>(null);
-  const [errorId, setErrorId] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [editPending, startEditTransition] = useTransition();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [createRoundPreset, setCreateRoundPreset] = useState<string>(
+    ROUND_PRESETS[0],
+  );
+  const [editRoundPreset, setEditRoundPreset] = useState<string>(
+    ROUND_PRESETS[0],
+  );
   const [createMessage, setCreateMessage] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
-  const [roundPreset, setRoundPreset] = useState<string>(ROUND_PRESETS[0]);
+  const [editMessage, setEditMessage] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
   const router = useRouter();
+
+  const editingGame = games.find((g) => g.id === editingId);
+
+  function openEdit(game: Game) {
+    const { preset } = resolveRoundPreset(game.round);
+    setEditRoundPreset(preset);
+    setEditMessage(null);
+    setEditError(null);
+    setEditingId(game.id);
+  }
 
   return (
     <div className="space-y-12">
@@ -42,7 +206,7 @@ export function GameAdminForm({ teams, games }: { teams: Team[]; games: Game[] }
             setCreateError(null);
             setCreateMessage(null);
             try {
-              fd.set("roundPreset", roundPreset);
+              fd.set("roundPreset", createRoundPreset);
               await upsertGame(fd);
               setCreateMessage("Partido creado.");
               router.refresh();
@@ -58,62 +222,11 @@ export function GameAdminForm({ teams, games }: { teams: Team[]; games: Game[] }
         className="space-y-4 rounded-lg border border-border p-6"
       >
         <h2 className="font-semibold text-white">Agregar partido</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block text-xs text-muted">
-            Local
-            <select name="homeTeamId" required className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white">
-              <option value="">Seleccionar…</option>
-              {teams.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name} ({t.categoryDivision} {t.genderDivision})
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-xs text-muted">
-            Visitante
-            <select name="awayTeamId" required className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white">
-              <option value="">Seleccionar…</option>
-              {teams.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name} ({t.categoryDivision} {t.genderDivision})
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-xs text-muted">
-            Fecha y hora
-            <input type="datetime-local" name="scheduledAt" required className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white" />
-          </label>
-          <label className="block text-xs text-muted">
-            Sede
-            <input
-              name="venue"
-              defaultValue="Gimnasio del Instituto La Salle Chihuahua"
-              className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
-            />
-          </label>
-          <label className="block text-xs text-muted">
-            Ronda
-            <select
-              value={roundPreset}
-              onChange={(e) => setRoundPreset(e.target.value)}
-              className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white"
-            >
-              {[...ROUND_PRESETS, ROUND_CUSTOM].map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-          </label>
-          {roundPreset === ROUND_CUSTOM && (
-            <label className="block text-xs text-muted">
-              Ronda personalizada
-              <input name="roundCustom" className="mt-1 w-full rounded border border-border bg-black px-3 py-2 text-white" />
-            </label>
-          )}
-        </div>
+        <GameFields
+          teams={teams}
+          roundPreset={createRoundPreset}
+          onRoundPresetChange={setCreateRoundPreset}
+        />
         <button type="submit" disabled={createPending} className="btn-primary">
           {createPending ? "Creando…" : "Crear partido"}
         </button>
@@ -121,106 +234,114 @@ export function GameAdminForm({ teams, games }: { teams: Team[]; games: Game[] }
       </form>
 
       <div>
-        <h2 className="mb-2 font-semibold text-white">Partidos ({games.length})</h2>
+        <h2 className="mb-2 font-semibold text-white">
+          Partidos ({games.length})
+        </h2>
         <p className="mb-4 text-sm text-muted">
-          Deja los marcadores vacíos si el partido aún no se juega. Captura ambos
-          cuando termine para marcarlo como jugado.
+          Usa <span className="text-white">Editar</span> para cambiar equipos,
+          fecha, sede, ronda o marcador. Deja los marcadores vacíos si el
+          partido aún no se juega.
         </p>
         <ul className="space-y-6">
           {games.map((g) => {
             const played = isGamePlayed(g.homeScore, g.awayScore, g.status);
-            const formKey = `${g.id}-${g.homeScore ?? ""}-${g.awayScore ?? ""}-${g.status}`;
+            const isEditing = editingId === g.id;
 
             return (
               <li key={g.id} className="rounded-lg border border-border p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm text-muted">
-                      {formatDateTimeMX(g.scheduledAt)}
-                      {g.round ? ` · ${g.round}` : ""}
-                      {g.venue ? ` · ${g.venue}` : ""}
-                    </p>
-                    <p className="mt-1 font-medium text-white">
-                      {g.homeTeam.name} vs {g.awayTeam.name}
-                    </p>
-                  </div>
-                  <span
-                    className={`rounded-full border px-3 py-1 text-xs font-medium ${
-                      played
-                        ? "border-accent/40 bg-accent/10 text-accent"
-                        : "border-border text-muted"
-                    }`}
+                {isEditing && editingGame ? (
+                  <form
+                    action={(fd) =>
+                      startEditTransition(async () => {
+                        setEditError(null);
+                        setEditMessage(null);
+                        try {
+                          fd.set("id", g.id);
+                          fd.set("roundPreset", editRoundPreset);
+                          await upsertGame(fd);
+                          setEditMessage("Partido actualizado.");
+                          setEditingId(null);
+                          router.refresh();
+                        } catch (err) {
+                          setEditError(
+                            err instanceof Error
+                              ? err.message
+                              : "No se pudo actualizar el partido.",
+                          );
+                        }
+                      })
+                    }
+                    className="space-y-4"
                   >
-                    {played
-                      ? `Jugado · ${g.homeScore}-${g.awayScore}`
-                      : "Por jugar"}
-                  </span>
-                </div>
-                <form
-                  key={formKey}
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    setErrorId(null);
-                    setErrorMessage(null);
-                    setSavedId(null);
-                    const fd = new FormData(e.currentTarget);
-                    setSavingId(g.id);
-                    void (async () => {
-                      try {
-                        await updateGameScore(g.id, fd);
-                        setSavedId(g.id);
-                        router.refresh();
-                      } catch (err) {
-                        setErrorId(g.id);
-                        setErrorMessage(
-                          err instanceof Error
-                            ? err.message
-                            : "No se pudo guardar el marcador.",
-                        );
-                      } finally {
-                        setSavingId(null);
-                      }
-                    })();
-                  }}
-                  className="mt-4 flex flex-wrap items-end gap-3"
-                >
-                  <label className="text-xs text-muted">
-                    Local
-                    <input
-                      type="number"
-                      name="homeScore"
-                      min={0}
-                      placeholder="—"
-                      defaultValue={g.homeScore ?? ""}
-                      className="mt-1 w-20 rounded border border-border bg-black px-3 py-2 text-white"
+                    <h3 className="font-medium text-white">Editar partido</h3>
+                    <GameFields
+                      teams={teams}
+                      game={editingGame}
+                      roundPreset={editRoundPreset}
+                      onRoundPresetChange={setEditRoundPreset}
                     />
-                  </label>
-                  <label className="text-xs text-muted">
-                    Visitante
-                    <input
-                      type="number"
-                      name="awayScore"
-                      min={0}
-                      placeholder="—"
-                      defaultValue={g.awayScore ?? ""}
-                      className="mt-1 w-20 rounded border border-border bg-black px-3 py-2 text-white"
-                    />
-                  </label>
-                  <button
-                    type="submit"
-                    disabled={savingId === g.id}
-                    className="btn-secondary text-xs"
-                  >
-                    {savingId === g.id ? "Guardando…" : "Guardar"}
-                  </button>
-                  <AdminFormFeedback
-                    success={savedId === g.id ? "Guardado." : null}
-                    error={errorId === g.id ? errorMessage : null}
-                  />
-                </form>
-                <div className="mt-3">
-                  <AdminDeleteButton label="este partido" onDelete={deleteGame.bind(null, g.id)} />
-                </div>
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        type="submit"
+                        disabled={editPending}
+                        className="btn-primary text-sm"
+                      >
+                        {editPending ? "Guardando…" : "Guardar cambios"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingId(null);
+                          setEditError(null);
+                          setEditMessage(null);
+                        }}
+                        className="btn-secondary text-sm"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                    <AdminFormFeedback success={editMessage} error={editError} />
+                  </form>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm text-muted">
+                          {formatDateTimeMX(g.scheduledAt)}
+                          {g.round ? ` · ${g.round}` : ""}
+                          {g.venue ? ` · ${g.venue}` : ""}
+                        </p>
+                        <p className="mt-1 font-medium text-white">
+                          {g.homeTeam.name} vs {g.awayTeam.name}
+                        </p>
+                      </div>
+                      <span
+                        className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                          played
+                            ? "border-accent/40 bg-accent/10 text-accent"
+                            : "border-border text-muted"
+                        }`}
+                      >
+                        {played
+                          ? `Jugado · ${g.homeScore}-${g.awayScore}`
+                          : "Por jugar"}
+                      </span>
+                    </div>
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => openEdit(g)}
+                        className="btn-secondary text-xs"
+                      >
+                        Editar
+                      </button>
+                      <AdminDeleteButton
+                        label="este partido"
+                        onDelete={deleteGame.bind(null, g.id)}
+                      />
+                    </div>
+                  </>
+                )}
               </li>
             );
           })}

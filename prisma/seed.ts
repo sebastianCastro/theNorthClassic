@@ -284,8 +284,8 @@ async function main() {
       venue: "Gimnasio del Instituto La Salle Chihuahua",
       venueMapUrl:
         "https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d3274.247532521542!2d-106.111524!3d28.6219927!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x86ea5cd67693c549%3A0x7b4f27cf692c260e!2sGym%20La%20Salle!5e1!3m2!1sen!2smx!4v1780783706529!5m2!1sen!2smx",
-      startDate: new Date("2026-06-14"),
-      endDate: new Date("2026-06-18"),
+      startDate: new Date("2026-06-12"),
+      endDate: new Date("2026-06-14"),
       active: true,
       registrationUrl: "https://forms.google.com/example",
       description:

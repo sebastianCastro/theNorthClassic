@@ -389,17 +389,9 @@ export async function upsertGame(formData: FormData) {
     roundPreset === "Personalizada"
       ? roundCustom || null
       : roundPreset || null;
-  const status = (formData.get("status") as string) || "SCHEDULED";
-  const homeScoreRaw = formData.get("homeScore");
-  const awayScoreRaw = formData.get("awayScore");
-  const homeScore =
-    homeScoreRaw !== null && homeScoreRaw !== ""
-      ? parseInt(String(homeScoreRaw), 10)
-      : null;
-  const awayScore =
-    awayScoreRaw !== null && awayScoreRaw !== ""
-      ? parseInt(String(awayScoreRaw), 10)
-      : null;
+  const homeScore = parseScoreField(formData.get("homeScore"));
+  const awayScore = parseScoreField(formData.get("awayScore"));
+  const status = resolveGameStatusFromScores(homeScore, awayScore);
 
   const homeTeam = await prisma.team.findUnique({ where: { id: homeTeamId } });
   if (!homeTeam) throw new Error("Equipo local no encontrado");
