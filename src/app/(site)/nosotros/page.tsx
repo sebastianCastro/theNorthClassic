@@ -8,7 +8,7 @@ export const metadata = buildMetadata({
   path: "/nosotros",
 });
 
-const LEADERSHIP = [
+const LEADERS = [
   {
     name: 'Santiago "Tiago" Contreras Bautista',
     role: "Fundador y Director General",
@@ -19,17 +19,49 @@ const LEADERSHIP = [
     role: "Diseño Gráfico y Comunicación Visual",
     bio: "Responsable del desarrollo visual de The North Classic. Encargada de la identidad gráfica del evento y del diseño de contenido para redes sociales y materiales promocionales.",
   },
+] as const;
+
+const DEPARTMENTS = [
   {
-    name: "Carolina Moye",
-    role: "Mercadotecnia",
-    bio: "Encargada de las estrategias de promoción, posicionamiento y vinculación del evento, contribuyendo al crecimiento de la comunidad y al alcance de The North Classic.",
+    title: "Director de Logística",
+    members: ["Jesús Esparza"],
   },
   {
-    name: "Andrea Gutiérrez",
-    role: "Mercadotecnia",
-    bio: "Encargada de las estrategias de promoción, posicionamiento y vinculación del evento, contribuyendo al crecimiento de la comunidad y al alcance de The North Classic.",
+    title: "Equipo de Marketing",
+    members: [
+      "Carolina Moye",
+      "Andrea Gutiérrez",
+      "Daniela Calvo",
+      "Camila Contreras",
+      "Andrés Duarte",
+      "Sofía Villegas",
+    ],
   },
-];
+  {
+    title: "Equipo estadísticas",
+    members: [
+      "Diego Almeida",
+      "Camila Martínez",
+      "Jenaro Bautista",
+      "Ricardo Bautista",
+      "Omar Guzmán",
+      "Andrea Guerra",
+      "Carolina Rosas",
+      "Enrique Ontiveros",
+      "Fernando Herrera",
+      "Aixchel Hernández",
+    ],
+  },
+  {
+    title: "Tienda Oficial de Merch",
+    members: [
+      "Miguel Labrado",
+      "Suset Hernández",
+      "Aneth Carrasco",
+      "Danna Ochoa",
+    ],
+  },
+] as const;
 
 export default function NosotrosPage() {
   return (
@@ -81,7 +113,7 @@ export default function NosotrosPage() {
             generación del basketball mexicano.
           </p>
           <div className="grid gap-6 sm:grid-cols-2">
-            {LEADERSHIP.map((person) => (
+            {LEADERS.map((person) => (
               <article
                 key={person.name}
                 className="rounded-lg border border-border bg-surface p-6"
@@ -95,6 +127,26 @@ export default function NosotrosPage() {
                 <p className="mt-3 text-sm text-muted leading-relaxed">
                   {person.bio}
                 </p>
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-6 grid gap-6 sm:grid-cols-2">
+            {DEPARTMENTS.map((dept) => (
+              <article
+                key={dept.title}
+                className="rounded-lg border border-border bg-surface p-6"
+              >
+                <h3 className="font-semibold text-white leading-snug">
+                  {dept.title}
+                </h3>
+                <ul className="mt-4 space-y-2">
+                  {dept.members.map((member) => (
+                    <li key={member} className="text-sm text-muted">
+                      {member}
+                    </li>
+                  ))}
+                </ul>
               </article>
             ))}
           </div>
